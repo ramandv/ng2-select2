@@ -29,7 +29,7 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
     @Input() value: string | string[];
 
     // enable / disable default style for select2
-    @Input() cssImport: boolean = true;
+    @Input() cssImport: boolean = false;
 
     // width of select2 input
     @Input() width: string;
