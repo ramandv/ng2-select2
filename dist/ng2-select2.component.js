@@ -77,7 +77,8 @@ var Select2Component = Select2Component_1 = (function () {
             _this.onChange(_this.element.val());
             _this.onTouched();
             _this.valueChanged.emit({
-                value: _this.element.val()
+                value: _this.element.val(),
+                data: _this.element.select2('data')
             });
         });
     };
@@ -92,7 +93,8 @@ var Select2Component = Select2Component_1 = (function () {
         this.onChange(newValue);
         this.onTouched();
         this.valueChanged.emit({
-            value: newValue
+            value: newValue,
+            data: this.element.select2('data')
         });
     };
     Select2Component.prototype.registerOnChange = function (fn) {
