@@ -52,7 +52,8 @@ exports.Select2Component = Select2Component_1 = (function () {
             this.onChange(newValue);
             this.onTouched();
             this.valueChanged.emit({
-                value: newValue
+                value: newValue,
+                data: this.element.select2('data')
             });
         }
         if (changes['value'] && changes['value'].previousValue !== changes['value'].currentValue) {
@@ -61,7 +62,8 @@ exports.Select2Component = Select2Component_1 = (function () {
             this.onChange(newValue);
             this.onTouched();
             this.valueChanged.emit({
-                value: newValue
+                value: newValue,
+                data: this.element.select2('data')
             });
         }
         if (changes['disabled'] && changes['disabled'].previousValue !== changes['disabled'].currentValue) {
