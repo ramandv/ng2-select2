@@ -69,17 +69,17 @@ exports.Select2Component = Select2Component_1 = (function () {
         }
     };
     Select2Component.prototype.ngAfterViewInit = function () {
-        var that = this;
+        var _this = this;
         this.element = jQuery(this.selector.nativeElement);
         this.initPlugin();
         if (typeof this.value !== 'undefined') {
             this.setElementValue(this.value);
         }
         this.element.on('select2:select select2:unselect', function () {
-            this.onChange(that.element.val());
-            this.onTouched();
-            that.valueChanged.emit({
-                value: that.element.val()
+            _this.onChange(_this.element.val());
+            _this.onTouched();
+            _this.valueChanged.emit({
+                value: _this.element.val()
             });
         });
     };

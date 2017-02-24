@@ -102,8 +102,6 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
     }
 
     ngAfterViewInit() {
-        let that = this;
-
         this.element = jQuery(this.selector.nativeElement);
         this.initPlugin();
 
@@ -111,11 +109,11 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
             this.setElementValue(this.value);
         }
 
-        this.element.on('select2:select select2:unselect', function () {
-            this.onChange(that.element.val());
+        this.element.on('select2:select select2:unselect', () => {
+            this.onChange(this.element.val());
             this.onTouched();
-            that.valueChanged.emit({
-                value: that.element.val()
+            this.valueChanged.emit({
+                value: this.element.val()
             });
         });
     }
