@@ -1,6 +1,6 @@
 import {
-    AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy,
-    Output, SimpleChanges, ViewChild, ViewEncapsulation, Renderer, OnInit, forwardRef
+    ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy,
+    Output, SimpleChanges, ViewChild, ViewEncapsulation, Renderer, OnInit, forwardRef, AfterContentInit
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 
@@ -8,7 +8,11 @@ import { Select2OptionData } from './ng2-select2.interface';
 
 @Component({
     selector: 'select2',
-    template: '<select #selector></select>',
+    template: `
+        <select #selector>
+            <ng-content select="option">
+            </ng-content>
+        </select>`,
     encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
@@ -19,7 +23,7 @@ import { Select2OptionData } from './ng2-select2.interface';
         }
     ]
 })
-export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, OnInit, ControlValueAccessor {
+export class Select2Component implements AfterContentInit, OnChanges, OnDestroy, OnInit, ControlValueAccessor {
     @ViewChild('selector') selector: ElementRef;
 
     // data for select2 drop down
@@ -27,9 +31,6 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
 
     // value for select2
     @Input() value: string | string[];
-
-    // enable / disable default style for select2
-    @Input() cssImport: boolean = false;
 
     // width of select2 input
     @Input() width: string;
@@ -43,29 +44,17 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
     // emitter when value is changed
     @Output() valueChanged = new EventEmitter();
 
-    onChange: Function = () => {
-    };
-    onTouched: Function = () => {
-    };
+    onChange: Function = () => {};
+    onTouched: Function = () => {};
 
     private element: JQuery = undefined;
     private check: boolean = false;
 
-    constructor(private renderer: Renderer) { }
+    constructor(private renderer: Renderer) {
+    }
 
     ngOnInit() {
-        if(this.cssImport) {
-            const head = document.getElementsByTagName('head')[0];
-            const link: any = head.children[head.children.length-1];
-
-            if(!link.version) {
-                const newLink = this.renderer.createElement(head, 'style');
-                this.renderer.setElementProperty(newLink, 'type', 'text/css');
-                this.renderer.setElementProperty(newLink, 'version', 'select2');
-                this.renderer.setElementProperty(newLink, 'innerHTML', this.style);
-            }
-
-        }
+        this.element = jQuery(this.selector.nativeElement);
     }
 
     ngOnChanges(changes: SimpleChanges) {
@@ -103,15 +92,15 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
         }
     }
 
-    ngAfterViewInit() {
-        this.element = jQuery(this.selector.nativeElement);
+    ngAfterContentInit() {
         this.initPlugin();
 
         if (typeof this.value !== 'undefined') {
             this.setElementValue(this.value);
         }
 
-        this.element.on('select2:select select2:unselect', () => {
+        this.element.on('select2:select select2:unselect', (evt) => {
+            console.log(evt);
             this.onChange(this.element.val());
             this.onTouched();
             this.valueChanged.emit({
@@ -121,14 +110,12 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
         });
     }
 
-    writeValue(newValue: any): void {
-        if (!this.element) {
-            this.element = jQuery(this.selector.nativeElement);
-            this.initPlugin();
+    writeValue(newValue: any) : void {
+        this.renderer.setElementProperty(this.selector.nativeElement, 'value', newValue);
+        if (!this.isSelect2Initialized()) {
+            return;
         }
-        if (typeof newValue !== 'undefined') {
-            this.setElementValue(newValue);
-        }
+        this.element.trigger('change.select2');
 
         this.onChange(newValue);
         this.onTouched();
@@ -160,16 +147,19 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
             return;
         }
 
-        // If select2 already initialized remove him and remove all tags inside
-        if (this.element.hasClass('select2-hidden-accessible') == true) {
+        // If select2 already initialized remove it and remove all tags inside
+        if (this.isSelect2Initialized()) {
             this.element.select2('destroy');
+            // TODO why remove it?
             this.renderer.setElementProperty(this.selector.nativeElement, 'innerHTML', '');
         }
 
         let options: Select2Options = {
-            data: this.data,
             width: (this.width) ? this.width : 'resolve'
         };
+        if (this.data) {
+            options['data'] = this.data
+        }
 
         Object.assign(options, this.options);
 
@@ -189,6 +179,10 @@ export class Select2Component implements AfterViewInit, OnChanges, OnDestroy, On
         if(this.disabled) {
             this.renderer.setElementProperty(this.selector.nativeElement, 'disabled', this.disabled);
         }
+    }
+
+    private isSelect2Initialized() {
+        return this.element.hasClass('select2-hidden-accessible');
     }
 
     private setElementValue (newValue: string | string[]) {
