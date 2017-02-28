@@ -10,7 +10,7 @@ import { Select2OptionData } from './ng2-select2.interface';
     selector: 'select2',
     template: `
         <select #selector>
-            <ng-content select="option">
+            <ng-content select="option, optgroup">
             </ng-content>
         </select>`,
     encapsulation: ViewEncapsulation.None,
@@ -58,11 +58,12 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
     }
 
     ngOnChanges(changes: SimpleChanges) {
-        if(!this.element) {
+        // console.log('ng2OnChanges:', changes);
+        if (!this.element) {
             return;
         }
 
-        if(changes['data'] && JSON.stringify(changes['data'].previousValue) !== JSON.stringify(changes['data'].currentValue)) {
+        if (changes['data'] && JSON.stringify(changes['data'].previousValue) !== JSON.stringify(changes['data'].currentValue)) {
             this.initPlugin();
 
             const newValue: string = this.element.val();
@@ -74,7 +75,7 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
             });
         }
 
-        if(changes['value'] && changes['value'].previousValue !== changes['value'].currentValue) {
+        if (changes['value'] && changes['value'].previousValue !== changes['value'].currentValue) {
             const newValue: string = changes['value'].currentValue;
 
             this.setElementValue(newValue);
@@ -87,7 +88,7 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
             });
         }
 
-        if(changes['disabled'] && changes['disabled'].previousValue !== changes['disabled'].currentValue) {
+        if (changes['disabled'] && changes['disabled'].previousValue !== changes['disabled'].currentValue) {
             this.renderer.setElementProperty(this.selector.nativeElement, 'disabled', this.disabled);
         }
     }
@@ -99,8 +100,28 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
             this.setElementValue(this.value);
         }
 
-        this.element.on('select2:select select2:unselect', (evt) => {
+        this.element.on('select2:select', (evt) => {
             console.log(evt);
+            this.onChange(this.element.val());
+            this.onTouched();
+            this.valueChanged.emit({
+                value: this.element.val(),
+                data: this.element.select2('data')
+            });
+        });
+
+        this.element.on('select2:unselect', (evt) => {
+            console.log(evt);
+            /* for some reason the element is still returned by val. Workaround for single-select controls */
+            if (this.options.multiple !== true) {
+                this.onChange(null);
+                this.onTouched();
+                this.valueChanged.emit({
+                    value: null,
+                    data: []
+                });
+                return;
+            }
             this.onChange(this.element.val());
             this.onTouched();
             this.valueChanged.emit({
@@ -111,16 +132,15 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
     }
 
     writeValue(newValue: any) : void {
-        this.renderer.setElementProperty(this.selector.nativeElement, 'value', newValue);
         if (!this.isSelect2Initialized()) {
             return;
         }
-        this.element.trigger('change.select2');
+        this.setElementValue(newValue);
 
         this.onChange(newValue);
         this.onTouched();
         this.valueChanged.emit({
-            value: newValue,
+            value: this.element.val(),
             data: this.element.select2('data')
         });
     }
@@ -155,15 +175,13 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
         }
 
         let options: Select2Options = {
+            data: this.data,
             width: (this.width) ? this.width : 'resolve'
         };
-        if (this.data) {
-            options['data'] = this.data
-        }
 
         Object.assign(options, this.options);
 
-        if(options.matcher) {
+        if (options.matcher) {
             jQuery.fn.select2.amd.require(['select2/compat/matcher'], (oldMatcher: any) => {
                 options.matcher = oldMatcher(options.matcher);
                 this.element.select2(options);
@@ -176,7 +194,7 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
             this.element.select2(options);
         }
 
-        if(this.disabled) {
+        if (this.disabled) {
             this.renderer.setElementProperty(this.selector.nativeElement, 'disabled', this.disabled);
         }
     }
@@ -185,8 +203,19 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
         return this.element.hasClass('select2-hidden-accessible');
     }
 
-    private setElementValue (newValue: string | string[]) {
-        if(Array.isArray(newValue)) {
+    private setElementValue (newValue: string | string[] | Object) {
+        if (newValue === null) {
+            newValue = '';
+        }
+        if (typeof newValue === 'object') {
+            if (!this.isSelect2Initialized()) {
+                return;
+            }
+            this.element.html('');
+            this.element.data('select2').trigger('select', {
+                data: newValue
+            });
+        } else if (Array.isArray(newValue)) {
             for (let option of this.selector.nativeElement.options) {
                 if (newValue.indexOf(option.value) > -1) {
                     this.renderer.setElementProperty(option, 'selected', 'true');

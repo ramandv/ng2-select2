@@ -30,6 +30,7 @@ exports.Select2Component = Select2Component_1 = (function () {
         this.element = jQuery(this.selector.nativeElement);
     };
     Select2Component.prototype.ngOnChanges = function (changes) {
+        // console.log('ng2OnChanges:', changes);
         if (!this.element) {
             return;
         }
@@ -63,8 +64,27 @@ exports.Select2Component = Select2Component_1 = (function () {
         if (typeof this.value !== 'undefined') {
             this.setElementValue(this.value);
         }
-        this.element.on('select2:select select2:unselect', function (evt) {
+        this.element.on('select2:select', function (evt) {
             console.log(evt);
+            _this.onChange(_this.element.val());
+            _this.onTouched();
+            _this.valueChanged.emit({
+                value: _this.element.val(),
+                data: _this.element.select2('data')
+            });
+        });
+        this.element.on('select2:unselect', function (evt) {
+            console.log(evt);
+            /* for some reason the element is still returned by val. Workaround for single-select controls */
+            if (_this.options.multiple !== true) {
+                _this.onChange(null);
+                _this.onTouched();
+                _this.valueChanged.emit({
+                    value: null,
+                    data: []
+                });
+                return;
+            }
             _this.onChange(_this.element.val());
             _this.onTouched();
             _this.valueChanged.emit({
@@ -74,15 +94,14 @@ exports.Select2Component = Select2Component_1 = (function () {
         });
     };
     Select2Component.prototype.writeValue = function (newValue) {
-        this.renderer.setElementProperty(this.selector.nativeElement, 'value', newValue);
         if (!this.isSelect2Initialized()) {
             return;
         }
-        this.element.trigger('change.select2');
+        this.setElementValue(newValue);
         this.onChange(newValue);
         this.onTouched();
         this.valueChanged.emit({
-            value: newValue,
+            value: this.element.val(),
             data: this.element.select2('data')
         });
     };
@@ -111,11 +130,9 @@ exports.Select2Component = Select2Component_1 = (function () {
             this.renderer.setElementProperty(this.selector.nativeElement, 'innerHTML', '');
         }
         var options = {
+            data: this.data,
             width: (this.width) ? this.width : 'resolve'
         };
-        if (this.data) {
-            options['data'] = this.data;
-        }
         Object.assign(options, this.options);
         if (options.matcher) {
             jQuery.fn.select2.amd.require(['select2/compat/matcher'], function (oldMatcher) {
@@ -137,7 +154,19 @@ exports.Select2Component = Select2Component_1 = (function () {
         return this.element.hasClass('select2-hidden-accessible');
     };
     Select2Component.prototype.setElementValue = function (newValue) {
-        if (Array.isArray(newValue)) {
+        if (newValue === null) {
+            newValue = '';
+        }
+        if (typeof newValue === 'object') {
+            if (!this.isSelect2Initialized()) {
+                return;
+            }
+            this.element.html('');
+            this.element.data('select2').trigger('select', {
+                data: newValue
+            });
+        }
+        else if (Array.isArray(newValue)) {
             for (var _i = 0, _a = this.selector.nativeElement.options; _i < _a.length; _i++) {
                 var option = _a[_i];
                 if (newValue.indexOf(option.value) > -1) {
@@ -183,7 +212,7 @@ __decorate$1([
 exports.Select2Component = Select2Component_1 = __decorate$1([
     _angular_core.Component({
         selector: 'select2',
-        template: "\n        <select #selector>\n            <ng-content select=\"option\">\n            </ng-content>\n        </select>",
+        template: "\n        <select #selector>\n            <ng-content select=\"option, optgroup\">\n            </ng-content>\n        </select>",
         encapsulation: _angular_core.ViewEncapsulation.None,
         changeDetection: _angular_core.ChangeDetectionStrategy.OnPush,
         providers: [
