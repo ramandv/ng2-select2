@@ -63,7 +63,7 @@ var Select2Component = Select2Component_1 = (function () {
             this.setElementValue(this.value);
         }
         this.element.on('select2:select', function (evt) {
-            console.log(evt);
+            //console.log(evt);
             _this.onChange(_this.element.val());
             _this.onTouched();
             _this.valueChanged.emit({
@@ -72,7 +72,7 @@ var Select2Component = Select2Component_1 = (function () {
             });
         });
         this.element.on('select2:unselect', function (evt) {
-            console.log(evt);
+            //console.log(evt);
             /* for some reason the element is still returned by val. Workaround for single-select controls */
             if (_this.options.multiple !== true) {
                 _this.onChange(null);
