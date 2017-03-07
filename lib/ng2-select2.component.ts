@@ -101,7 +101,7 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
         }
 
         this.element.on('select2:select', (evt) => {
-            console.log(evt);
+            //console.log(evt);
             this.onChange(this.element.val());
             this.onTouched();
             this.valueChanged.emit({
@@ -111,7 +111,7 @@ export class Select2Component implements AfterContentInit, OnChanges, OnDestroy,
         });
 
         this.element.on('select2:unselect', (evt) => {
-            console.log(evt);
+            //console.log(evt);
             /* for some reason the element is still returned by val. Workaround for single-select controls */
             if (this.options.multiple !== true) {
                 this.onChange(null);
